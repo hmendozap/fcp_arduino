@@ -30,9 +30,9 @@ unsigned long signalDuration = 0;
 ISR(TIMER5_CAPT_vect) {
   TCNT5 = 0; // Reset the counter
   if (count_enabled) {
-    if (index != 0 || bitRead(TCCR5B, ICES5) == true) { // Wait Raising Edge
+    if (index != 0 || bitRead(TCCR5B, ICES5) == true) { // Wait rising edge
       if (index < numberOfEntries) {
-        results[index] = ICR5; // Save the InputCaptureRegister
+        results[index] = ICR5; // Save the InputCompareRegister -- in microseconds
         index++;
       }
     }
