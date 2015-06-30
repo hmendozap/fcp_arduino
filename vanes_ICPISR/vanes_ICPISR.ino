@@ -1,15 +1,21 @@
 /*
-  Input Capture - Recipe 18.7 Arduino Cookbook
+  Reading PWM from Interrupts and ICP -- Compare Methods
 */
 
+const int inputInterruptPin = 2;
 const int inputCapturePin = 48; // Oder 49
 
-const int prescale = 8;
-const byte prescaleBits = B010; // Prescale Factor
-const long precision = (1000000/(F_CPU / 1000))*prescale;
+volatile unsigned long pwm_val = 0;
+volatile unsigned long tmp_count = 0;
 
-const int numberOfEntries = 16;
-const int countSamplePeriod = 1000;
+#define inter0 (PINE & 0b00010000)
+
+const int prescale = 8;
+const byte prescaleBits = B010; // Prescale Factor factor8 = B010; factor1 = B001;
+const long precision = (1000000/(F_CPU / 1000)) * prescale;
+
+const int numberOfEntries = 8;
+const int countSamplePeriod = 350;
 
 volatile byte index = 0;
 volatile byte count_enabled = 0; // 0 disables - 1 Enables
@@ -39,15 +45,21 @@ ISR(TIMER5_CAPT_vect) {
   }
   TCCR5B ^= _BV(ICES5);  // togge bit to trigger on the other edge
 }
-
 /* Allow Overflow interruptions from timer5 ATMega2560*/
 ISR(TIMER5_OVF_vect) {
   overflows++;
 }
 
+void analyze() {
+  if (inter0)
+    tmp_count = micros(); // positive edge
+  else
+    pwm_val = micros() - tmp_count; // negative edge; get pulse width
+}
+
 void setup() {
-  Serial.begin(9600);
-  pinMode(inputCapturePin, INPUT);  // ICP pin as input
+  pinMode(inputCapturePin, INPUT);
+  pinMode(inputInterruptPin, INPUT);
 
   TCCR5A = 0; // Normal Counting Mode
   TCCR5B = prescaleBits; // set prescale bits
@@ -55,46 +67,48 @@ void setup() {
 
   bitSet(TIMSK5, ICIE5); // enable input capture interrupt for timer5
   bitSet(TIMSK5, TOIE5); // Enable overflow interrupt
+
+  Serial.begin(9600);
   Serial.print("Pulses with precision: ");
   Serial.println(precision); // report duration of each tick in nanoseconds
+  Serial.println("Ready for compare");
+  attachInterrupt(0, analyze, CHANGE);
 }
 
-// This loops prints the numbe of pulses in the last second, showing min and max pulse widths
 void loop() {
-  count_enabled = 1; // enable sampling
+  count_enabled = 1;
   delay(countSamplePeriod);
-  count_enabled = 0; // disable sampling
+  count_enabled = 0;
   if (index > 0) {
     //Serial.println("Duration in microseconds are: ");
     for (byte i=0; i < numberOfEntries; i++) {
-      unsigned long duration;
-      duration = results[i] * precision; //pulse duration in nanoseconds
-      Serial.println(duration); // duration in microseconds
-      /*if (i % 2 == 0) {
+      if (i % 2 == 0) {
         pulse_OFF += results[i] * precision;
       }
       else {
         pulse_ON += results[i] * precision;
-      }*/
+      }
     }
-    /*pulse_ON_avg = pulse_ON / (500 * numberOfEntries);
+    //Serial.println(results[1]);
+    pulse_ON_avg = pulse_ON / (500 * numberOfEntries);
     pulse_OFF_avg = pulse_OFF / (500 * numberOfEntries);
     signalDuration = (pulse_ON_avg + pulse_OFF_avg);
-    angle = ((pulse_ON_avg * signalDuration)/(pulse_ON_avg + pulse_OFF_avg)) - 1;
-    angle = (angle * encConversion) / signalDuration;
+    /*angle = ((pulse_ON_avg * signalDuration)/(pulse_ON_avg + pulse_OFF_avg)) - 1;*/
+    /*angle = (angle * encConversion) / signalDuration;*/
     Serial.print("signal length: ");
     Serial.println(signalDuration , DEC); // duration in microseconds
     Serial.print("high length: ");
     Serial.println(pulse_ON_avg , DEC); // duration in microseconds
     Serial.print("low length: ");
     Serial.println(pulse_OFF_avg , DEC); // duration in microseconds
-    Serial.print("angle: ");
-    Serial.println(angle , DEC); // duration in microseconds
     Serial.print("overflows: ");
     Serial.println(overflows, DEC);
+    /*Serial.print("angle: ");*/
+    /*Serial.println(angle , DEC); // duration in microseconds*/
     index = 0;
     pulse_OFF = 0;
     pulse_ON = 0;
-    overflows=0;*/
+    overflows = 0;
   }
+    Serial.println(pwm_val, DEC);
 }
