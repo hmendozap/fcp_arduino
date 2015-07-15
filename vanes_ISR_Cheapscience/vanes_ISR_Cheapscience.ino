@@ -8,7 +8,7 @@ const int inputCapturePin = 48; // Oder 49
 volatile long pwm_val = 0;
 volatile long tmp_count = 0;
 
-#define inter0 (PINE & 0b00010000) // Faster than digital read ???
+#define inter0 (PINE & 0b00010000)
 
 void analyze() {
   if (inter0)

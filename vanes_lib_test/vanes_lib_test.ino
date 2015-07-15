@@ -20,7 +20,7 @@ void setup()
 TCCR3B = (TCCR3B & mask) | prescale;
 Serial.begin(9600);
 Serial.println("ready for calibration");
-delay(1000);
+delay(100);
 alpha.calibrate();
 //beta.calibrate();
 Wire.begin(I2CAdress);
