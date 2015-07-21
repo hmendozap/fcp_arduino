@@ -4,13 +4,12 @@
 
 const int inputCapturePin = 48; // Oder 49
 
-const int prescale = 8;
-const byte prescaleBits = B010; // Prescale Factor
-/*const long precision = (1000000/(F_CPU / 1000))*prescale;*/
-const long precision = 500;
+const int prescale = 1;
+const byte prescaleBits = B001; // Prescale Factor
+const float precision = (1000000/(float)(F_CPU / 1000)) * prescale;
 
 const int numberOfEntries = 4;
-const int countSamplePeriod = 500;
+const int countSamplePeriod = 50;
 
 volatile byte index = 0;
 volatile byte count_enabled = 0; // 0 disables - 1 Enables
@@ -31,14 +30,14 @@ unsigned long signalDuration = 0;
 ISR(TIMER5_CAPT_vect) {
   TCNT5 = 0; // Reset the counter
   if (count_enabled) {
-    if (bitRead(TCCR5B, ICES5) == true) { // Wait rising edge
+    if (index != 0 || bitRead(TCCR5B, ICES5) == true) { // Wait rising edge
       if (index < numberOfEntries) {
         results[index] = ICR5; // Save the InputCompareRegister -- in microseconds
         index++;
       }
     }
   }
-  /*TCCR5B ^= _BV(ICES5);  // togge bit to trigger on the other edge*/
+  TCCR5B ^= _BV(ICES5);  // togge bit to trigger interrupt on the other edge
 }
 
 /* Allow Overflow interruptions from timer5 ATMega2560*/
@@ -57,7 +56,7 @@ void setup() {
   OCR5B = 0;
   bitSet(TIMSK5, ICIE5); // enable input capture interrupt for timer5
   bitSet(TIMSK5, TOIE5); // Enable overflow interrupt
-  Serial.print(F_CPU);
+  //Serial.print(F_CPU);
   Serial.print("Pulses with precision: ");
   Serial.println(precision); // report duration of each tick in nanoseconds
 }
@@ -91,10 +90,10 @@ void loop() {
     //Serial.println(pulse_ON_avg , DEC); // duration in microseconds
     //Serial.print("low length: ");
     //Serial.println(pulse_OFF_avg , DEC); // duration in microseconds
-    if (overflows == 0) {
+    /*if (overflows == 0) {*/
       Serial.print("angle: ");
       Serial.println(angle , DEC); // duration in microseconds
-    }
+    /*}*/
     Serial.print("overflows: ");
     Serial.println(overflows, DEC);
     index = 0;

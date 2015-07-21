@@ -3,6 +3,7 @@
   author: HM
   Based on Arduino Cookbook
 */
+#include <math.h>
 
 int signalLength = 0;
 unsigned long accum = 0;
@@ -46,6 +47,8 @@ int count = CALIBRATIONCOUNT;
 const float encConversion = 359.91; // Rotary encoder conversion constant
 float angleVert = 0.0;
 float angleHorz = 0.0;
+float angleVertCal = 0.0;
+float angleHorzCal = 0.0;
 unsigned long signalVert = 0;
 unsigned long signalHorz = 0;
 int vert_valid = 0;
@@ -102,8 +105,16 @@ void loop() {
       angleHorz = 0;
     }
 
+    // Own "modulo" function
+    angleVertCal = angleVert - 249.94 - 359.91 * floor((angleVert-249.94)/359.91);
+    angleVert = angleVertCal * 360.0 / 359.91 - 180.0; // Own float "map" function
+    /*angleVert = map(angleVertCal, 0, 359.91, -180, 180);*/
     Serial.print("vertical angle:\t\t");
     Serial.println(angleVert , DEC);
+
+    angleHorzCal = angleHorz - 249.94 - 359.91 * floor((angleHorz-249.94)/359.91);
+    angleHorz = angleHorzCal * 360.0 / 359.91 - 180.0; // Own float "map" function
+    /*angleHorz = map(angleHorzCal, 0, 359.91, -180, 180);*/
     Serial.print("horizontal angle:\t");
     Serial.println(angleHorz , DEC);
 
